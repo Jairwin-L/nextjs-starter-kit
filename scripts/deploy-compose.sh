@@ -10,15 +10,15 @@ Usage:
 
 Optional environment variables:
   DEPLOY_ENV_FILE        Override env file. Defaults to .env.production or .env.development.
-  COMPOSE_PROJECT_NAME   Override Compose project. Defaults to nextjs-blank-template-prod or nextjs-blank-template-dev.
-  COMPOSE_FILE           Override Compose file. Defaults to docker-compose.prod.yml.
+  COMPOSE_PROJECT_NAME   Override Compose project. Defaults to nextjs-starter-kit-prod or nextjs-starter-kit-dev.
+  COMPOSE_FILE           Override Compose file. Defaults to docker-compose.prod.yml or docker-compose.dev.yml.
   COMPOSE_SERVICE        Override Compose service. Defaults to app.
   MIGRATE_IMAGE          Override migration image. Defaults to APP_IMAGE-migrate.
-  POSTGRES_PASSWORD      Required by docker-compose.prod.yml for the bundled PostgreSQL service.
+  PRISMA_SYNC_COMMAND    Override Prisma sync command. Defaults to "vp run prisma:push:deploy".
 
 Examples:
-  APP_IMAGE=ghcr.io/jairwin-l/nextjs-blank-template:latest scripts/deploy-compose.sh production
-  scripts/deploy-compose.sh development ghcr.io/jairwin-l/nextjs-blank-template:dev
+  APP_IMAGE=ghcr.io/jairwin-l/nextjs-starter-kit:latest scripts/deploy-compose.sh production
+  scripts/deploy-compose.sh development ghcr.io/jairwin-l/nextjs-starter-kit:dev
 EOF
 }
 
@@ -33,19 +33,25 @@ fi
 case "${environment}" in
   production | prod | main)
     default_env_file=".env.production"
-    default_project_name="nextjs-blank-template-prod"
+    default_project_name="nextjs-starter-kit-prod"
     default_compose_file="docker-compose.prod.yml"
     default_app_port="8062"
-    default_postgres_db="nextjs_blank_template"
-    default_postgres_user="nextjs_blank_template"
+    default_postgres_db="nextjs_starter_kit"
+    default_postgres_user="nextjs_starter_kit"
+    default_postgres_password="nextjs_starter_kit"
+    default_database_url="postgresql://nextjs_starter_kit:nextjs_starter_kit@postgres:5432/nextjs_starter_kit?schema=public"
+    default_prisma_sync_command="vp run prisma:push:deploy"
     ;;
   development | dev)
     default_env_file=".env.development"
-    default_project_name="nextjs-blank-template-dev"
-    default_compose_file="docker-compose.prod.yml"
+    default_project_name="nextjs-starter-kit-dev"
+    default_compose_file="docker-compose.dev.yml"
     default_app_port="8060"
-    default_postgres_db="nextjs_blank_template_dev"
-    default_postgres_user="nextjs_blank_template"
+    default_postgres_db="nextjs_starter_kit_dev"
+    default_postgres_user="nextjs_starter_kit"
+    default_postgres_password="nextjs_starter_kit"
+    default_database_url="postgresql://nextjs_starter_kit:nextjs_starter_kit@postgres:5432/nextjs_starter_kit_dev?schema=public"
+    default_prisma_sync_command="vp run prisma:push:deploy"
     ;;
   *)
     echo "Unknown environment: ${environment}" >&2
@@ -65,41 +71,62 @@ compose_service="${COMPOSE_SERVICE:-app}"
 env_file="${DEPLOY_ENV_FILE:-${default_env_file}}"
 project_name="${COMPOSE_PROJECT_NAME:-${default_project_name}}"
 migrate_image="${MIGRATE_IMAGE:-${image}-migrate}"
+prisma_sync_command="${PRISMA_SYNC_COMMAND:-${default_prisma_sync_command}}"
 
 if [[ ! -f "${compose_file}" ]]; then
   echo "Missing compose file: ${compose_file}" >&2
   exit 1
 fi
 
+mkdir -p "$(dirname "${env_file}")"
+
 if [[ ! -f "${env_file}" ]]; then
   echo "Missing env file: ${env_file}" >&2
   exit 1
 fi
 
+has_env_key() {
+  local key="$1"
+
+  grep -qE "^${key}[[:space:]]*=" "${env_file}"
+}
+
+append_env() {
+  local key="$1"
+  local value="$2"
+
+  if [[ "${value}" == *$'\n'* || "${value}" == *$'\r'* ]]; then
+    echo "Environment value for ${key} must be a single line." >&2
+    exit 1
+  fi
+
+  value=${value//\'/\'\\\'\'}
+  printf "%s='%s'\n" "${key}" "${value}" >> "${env_file}"
+}
+
 ensure_default_env() {
   local key="$1"
   local value="$2"
 
+  if has_env_key "${key}"; then
+    unset "${key}"
+    return
+  fi
+
   if [[ -n "${!key:-}" ]]; then
+    append_env "${key}" "${!key}"
     return
   fi
 
-  if grep -qE "^${key}[[:space:]]*=" "${env_file}"; then
-    return
-  fi
-
+  append_env "${key}" "${value}"
   export "${key}=${value}"
 }
 
 ensure_default_env APP_PORT "${default_app_port}"
 ensure_default_env POSTGRES_DB "${default_postgres_db}"
 ensure_default_env POSTGRES_USER "${default_postgres_user}"
-
-if [[ -z "${POSTGRES_PASSWORD:-}" ]] &&
-  ! grep -qE "^POSTGRES_PASSWORD[[:space:]]*=" "${env_file}"; then
-  echo "POSTGRES_PASSWORD is required in ${env_file} for docker-compose.prod.yml." >&2
-  exit 1
-fi
+ensure_default_env POSTGRES_PASSWORD "${default_postgres_password}"
+ensure_default_env DATABASE_URL "${default_database_url}"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "docker command is required." >&2
@@ -113,6 +140,7 @@ echo "  project: ${project_name}"
 echo "  env:     ${env_file}"
 echo "  compose: ${compose_file}"
 echo "  service: ${compose_service}"
+echo "  prisma:  ${prisma_sync_command}"
 
 compose() {
   COMPOSE_PROJECT_NAME="${project_name}" APP_IMAGE="${image}" MIGRATE_IMAGE="${migrate_image}" \
@@ -122,7 +150,7 @@ compose() {
 COMPOSE_PROJECT_NAME="${project_name}" APP_IMAGE="${image}" MIGRATE_IMAGE="${migrate_image}" \
   docker compose --env-file "${env_file}" -f "${compose_file}" pull "${compose_service}" migrate
 
-compose run --rm migrate
+compose run --rm migrate sh -lc "${prisma_sync_command}"
 
 compose up -d --no-build "${compose_service}"
 
