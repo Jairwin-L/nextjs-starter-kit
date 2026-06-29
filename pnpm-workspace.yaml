@@ -1,12 +1,18 @@
 allowBuilds:
+  '@parcel/watcher': true
   '@prisma/engines': true
-  '@tailwindcss/oxide': true
+  esbuild: true
   prisma: true
   sharp: true
+  vue-demi: true
+  workerd: true
 catalog:
   vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
+  vitest: 4.1.9
   vite-plus: latest
+minimumReleaseAgeExclude:
+  - miniflare@4.20260623.0
+  - wrangler@4.104.0
 overrides:
   vite: 'catalog:'
   vitest: 'catalog:'

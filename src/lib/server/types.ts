@@ -3,6 +3,10 @@ import type { NextRequest, NextResponse } from 'next/server';
 export interface AuthUser {
   userId: string;
   email?: string;
+  emailVerified?: boolean;
+  nickName?: string;
+  picture?: string;
+  status?: string;
   roles?: string[];
   permissions?: string[];
 }

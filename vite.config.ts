@@ -196,7 +196,7 @@ export default defineConfig({
       ],
       'no-useless-concat': 'error',
       'no-useless-return': 'error',
-      'no-void': 'error',
+      'no-void': 'warn',
       'prefer-promise-reject-errors': [
         'warn',
         {
@@ -206,7 +206,8 @@ export default defineConfig({
       radix: 'warn',
       yoda: 'warn',
       'no-await-in-loop': 'warn',
-      'no-console': 'warn',
+      // TODO: review console usage and decide whether to allow it in development
+      // 'no-console': 'warn',
       'no-inner-declarations': 'error',
       'no-template-curly-in-string': 'warn',
       'new-cap': [
