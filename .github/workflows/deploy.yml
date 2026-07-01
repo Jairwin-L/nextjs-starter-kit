@@ -38,6 +38,8 @@ jobs:
         run: vp install
 
       - name: Generate Prisma Client
+        env:
+          DATABASE_URL: postgresql://prisma:prisma@localhost:5432/prisma?schema=public
         run: vp run prisma:generate
 
       - name: Verify
@@ -73,17 +75,23 @@ jobs:
           echo "migrate_tag=${IMAGE_NAME}:${COMMIT_SHA}-migrate" >> "${GITHUB_OUTPUT}"
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.image.outputs.name }}
+
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           target: runner
@@ -92,11 +100,14 @@ jobs:
           tags: |
             ${{ steps.image.outputs.name }}:latest
             ${{ steps.image.outputs.tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=nextjs-starter-kit-runner
+          cache-to: type=gha,scope=nextjs-starter-kit-runner,mode=max,ignore-error=true
 
       - name: Build and push migration image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           target: migrator
@@ -105,8 +116,11 @@ jobs:
           tags: |
             ${{ steps.image.outputs.name }}:latest-migrate
             ${{ steps.image.outputs.migrate_tag }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=nextjs-starter-kit-migrator
+          cache-to: type=gha,scope=nextjs-starter-kit-migrator,mode=max,ignore-error=true
 
   deploy:
     name: Deploy to server
@@ -160,7 +174,12 @@ jobs:
           POSTGRES_DB: ${{ vars.POSTGRES_DB || (github.event_name == 'pull_request_target' && 'nextjs_starter_kit' || 'nextjs_starter_kit_dev') }}
           POSTGRES_USER: ${{ vars.POSTGRES_USER || 'nextjs_starter_kit' }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || vars.POSTGRES_PASSWORD || 'nextjs_starter_kit' }}
+          POSTGRES_IMAGE: ${{ vars.POSTGRES_IMAGE || 'postgres:18-alpine' }}
+          POSTGRES_OLD_IMAGE: ${{ vars.POSTGRES_OLD_IMAGE || 'postgres:16-alpine' }}
+          POSTGRES_UPGRADE_MODE: ${{ vars.POSTGRES_UPGRADE_MODE || '' }}
           DATABASE_URL: ${{ secrets.DATABASE_URL || (github.event_name == 'pull_request_target' && 'postgresql://nextjs_starter_kit:nextjs_starter_kit@postgres:5432/nextjs_starter_kit?schema=public' || 'postgresql://nextjs_starter_kit:nextjs_starter_kit@postgres:5432/nextjs_starter_kit_dev?schema=public') }}
+          BOOTSTRAP_ADMIN_EMAIL: ${{ vars.BOOTSTRAP_ADMIN_EMAIL || 'jairwin@jairwin.cc' }}
+          BOOTSTRAP_ADMIN_STRICT: ${{ vars.BOOTSTRAP_ADMIN_STRICT || 'true' }}
           AUTH_CODE_SECRET: ${{ secrets.AUTH_CODE_SECRET }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_FROM_EMAIL: ${{ vars.RESEND_FROM_EMAIL || secrets.RESEND_FROM_EMAIL }}
@@ -216,7 +235,12 @@ jobs:
           write_env POSTGRES_DB "${POSTGRES_DB}"
           write_env POSTGRES_USER "${POSTGRES_USER}"
           write_env POSTGRES_PASSWORD "${POSTGRES_PASSWORD}"
+          write_env POSTGRES_IMAGE "${POSTGRES_IMAGE}"
+          write_env POSTGRES_OLD_IMAGE "${POSTGRES_OLD_IMAGE}"
+          write_env POSTGRES_UPGRADE_MODE "${POSTGRES_UPGRADE_MODE}"
           write_env DATABASE_URL "${DATABASE_URL}"
+          write_env BOOTSTRAP_ADMIN_EMAIL "${BOOTSTRAP_ADMIN_EMAIL}"
+          write_env BOOTSTRAP_ADMIN_STRICT "${BOOTSTRAP_ADMIN_STRICT}"
           write_env AUTH_CODE_SECRET "${AUTH_CODE_SECRET}"
           write_env RESEND_API_KEY "${RESEND_API_KEY}"
           write_env RESEND_FROM_EMAIL "${RESEND_FROM_EMAIL}"
@@ -233,7 +257,9 @@ jobs:
             echo 'mv "${REMOTE_ENV_TMP}" "${DEPLOY_ENV_FILE}"'
             echo 'chmod 600 "${DEPLOY_ENV_FILE}"'
             echo 'chmod +x scripts/deploy-compose.sh'
+            echo 'chmod +x scripts/upgrade-postgres-compose.sh'
             echo 'if [ ! -x scripts/deploy-compose.sh ]; then echo "Missing executable script: scripts/deploy-compose.sh" && exit 1; fi'
+            echo 'if [ ! -x scripts/upgrade-postgres-compose.sh ]; then echo "Missing executable script: scripts/upgrade-postgres-compose.sh" && exit 1; fi'
             echo 'DEPLOY_ENV_FILE="${DEPLOY_ENV_FILE}" COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME}" scripts/deploy-compose.sh "${DEPLOY_ENVIRONMENT}" "${IMAGE_TAG}"'
           } > "${remote_script}"
 
@@ -256,6 +282,10 @@ jobs:
           scp -i ~/.ssh/deploy_key -P "${DEPLOY_PORT}" \
             scripts/deploy-compose.sh \
             "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/scripts/deploy-compose.sh"
+
+          scp -i ~/.ssh/deploy_key -P "${DEPLOY_PORT}" \
+            scripts/upgrade-postgres-compose.sh \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}/scripts/upgrade-postgres-compose.sh"
 
           printf '%s\n' "${GHCR_READ_TOKEN}" | ssh -i ~/.ssh/deploy_key -p "${DEPLOY_PORT}" \
             "${DEPLOY_USER}@${DEPLOY_HOST}" \
