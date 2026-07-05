@@ -1,16 +1,12 @@
 import { articleQuerySchema } from '@/lib/article-schema';
-import ArticlesClient from './articles';
+import ArticlesClient from './components/articles';
 import { fetchArticleList } from './utils/article';
-
-interface ArticlesPageProps {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}
 
 function getSearchValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default async function Page({ searchParams }: ArticlesPageProps) {
+export default async function Page({ searchParams }: IAppPages.ArticleListPageProps) {
   const params = await searchParams;
   const query = articleQuerySchema.parse({
     cursor: getSearchValue(params.cursor),

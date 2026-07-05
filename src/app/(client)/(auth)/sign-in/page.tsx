@@ -6,19 +6,9 @@ import { useEffect, useState } from 'react';
 import { Button, Form, Input, Tabs, Typography } from 'antd';
 import type { FormInstance } from 'antd';
 import { APP_BLACK_LOGO, APP_NAME, VERIFICATION_CODE_TTL_SECONDS } from '@/constants';
-import { requestVerificationCode, signInWithCode, signInWithPassword } from '@/services/auth';
+import { requestVerificationCode, signInWithCode, signInWithPassword } from '@/api/modules/auth';
 import { useAuthSessionStore } from '@/stores/auth-session';
 import styles from './page.module.scss';
-
-interface PasswordSignInValues {
-  email: string;
-  password: string;
-}
-
-interface CodeSignInValues {
-  code: string;
-  email: string;
-}
 
 async function requestCode(
   form: FormInstance,
@@ -60,8 +50,8 @@ function getRedirectPath(): string {
 export default function SignInPage() {
   const router = useRouter();
   const setPayload = useAuthSessionStore((state) => state.setPayload);
-  const [passwordForm] = Form.useForm<PasswordSignInValues>();
-  const [codeForm] = Form.useForm<CodeSignInValues>();
+  const [passwordForm] = Form.useForm<IAppForms.PasswordSignInValues>();
+  const [codeForm] = Form.useForm<IAppForms.CodeSignInValues>();
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeCountdown, setCodeCountdown] = useState(0);
@@ -79,7 +69,7 @@ export default function SignInPage() {
     return () => window.clearTimeout(timer);
   }, [codeCountdown]);
 
-  async function onPasswordFinish(values: PasswordSignInValues): Promise<void> {
+  async function onPasswordFinish(values: IAppForms.PasswordSignInValues): Promise<void> {
     setPasswordLoading(true);
 
     try {
@@ -93,7 +83,7 @@ export default function SignInPage() {
     }
   }
 
-  async function onCodeFinish(values: CodeSignInValues): Promise<void> {
+  async function onCodeFinish(values: IAppForms.CodeSignInValues): Promise<void> {
     setCodeLoading(true);
 
     try {

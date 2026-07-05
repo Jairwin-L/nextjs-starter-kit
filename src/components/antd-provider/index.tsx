@@ -1,8 +1,8 @@
 'use client';
 
-import { type ReactNode, useEffect } from 'react';
+import { useEffect } from 'react';
 import { App, ConfigProvider } from 'antd';
-import { setAlovaMessageApi } from '@/utils/alova';
+import { setAlovaMessageApi } from '@/api/alova';
 
 function AlovaMessageBridge() {
   const { message } = App.useApp();
@@ -18,7 +18,7 @@ function AlovaMessageBridge() {
   return null;
 }
 
-export default function AntdProvider({ children }: { children: ReactNode }) {
+export default function AntdProvider({ children }: IComponent.ChildrenProps) {
   return (
     <ConfigProvider
       theme={{

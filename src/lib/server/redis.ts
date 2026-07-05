@@ -1,8 +1,6 @@
 import { Socket, connect as connectNet } from 'node:net';
 import { TLSSocket, connect as connectTls } from 'node:tls';
 
-type RedisValue = string | number | null;
-
 const REDIS_COMMAND_TIMEOUT_MS = 5000;
 
 function encodeCommand(parts: string[]): string {
@@ -36,10 +34,10 @@ function getReadyEvent(url: URL): 'connect' | 'secureConnect' {
   return url.protocol === 'rediss:' ? 'secureConnect' : 'connect';
 }
 
-function parseSimpleResponse(
+function parseRedisResponse(
   buffer: Buffer,
   offset = 0,
-): { nextOffset: number; value: RedisValue } | null {
+): { nextOffset: number; value: IServer.RedisValue } | null {
   const marker = buffer.subarray(offset, offset + 1).toString();
   const payload = buffer.subarray(offset + 1).toString();
   const lineEnd = buffer.indexOf('\r\n', offset);
@@ -78,10 +76,42 @@ function parseSimpleResponse(
     return { nextOffset: end + 2, value: buffer.subarray(start, end).toString() };
   }
 
+  if (marker === '*') {
+    const [countText] = payload.split('\r\n');
+    const count = Number(countText);
+
+    if (count < 0) {
+      return { nextOffset: lineEnd + 2, value: null };
+    }
+
+    const values: IServer.RedisArrayValue = [];
+    let nextOffset = lineEnd + 2;
+
+    for (let index = 0; index < count; index += 1) {
+      const parsed = parseRedisResponse(buffer, nextOffset);
+
+      if (!parsed) {
+        return null;
+      }
+
+      if (
+        typeof parsed.value === 'string' ||
+        typeof parsed.value === 'number' ||
+        parsed.value === null
+      ) {
+        values.push(parsed.value);
+      }
+
+      nextOffset = parsed.nextOffset;
+    }
+
+    return { nextOffset, value: values };
+  }
+
   throw new Error('不支持的 Redis 响应');
 }
 
-async function runRawRedisCommand(parts: string[]): Promise<RedisValue> {
+async function runRawRedisCommand(parts: string[]): Promise<IServer.RedisValue> {
   const url = getRedisUrl();
 
   return new Promise((resolve, reject) => {
@@ -107,12 +137,12 @@ async function runRawRedisCommand(parts: string[]): Promise<RedisValue> {
       chunks.push(chunk);
       const buffer = Buffer.concat(chunks);
       let offset = 0;
-      let value: RedisValue = null;
+      let value: IServer.RedisValue = null;
       let replyCount = 0;
 
       try {
         while (replyCount < expectedReplies) {
-          const parsed = parseSimpleResponse(buffer, offset);
+          const parsed = parseRedisResponse(buffer, offset);
 
           if (!parsed) {
             return;
@@ -160,10 +190,73 @@ export async function redisGet(key: string): Promise<string | null> {
   return typeof value === 'string' ? value : null;
 }
 
+export async function redisMGet(keys: string[]): Promise<Array<string | null>> {
+  if (keys.length === 0) {
+    return [];
+  }
+
+  const value = await runRawRedisCommand(['MGET', ...keys]);
+
+  if (!Array.isArray(value)) {
+    return keys.map(() => null);
+  }
+
+  return value.map((item) => (typeof item === 'string' ? item : null));
+}
+
 export async function redisSetEx(key: string, seconds: number, value: string): Promise<void> {
   await runRawRedisCommand(['SET', key, value, 'EX', String(seconds)]);
 }
 
 export async function redisDel(key: string): Promise<void> {
   await runRawRedisCommand(['DEL', key]);
+}
+
+export async function redisTtl(key: string): Promise<number> {
+  const value = await runRawRedisCommand(['TTL', key]);
+  return typeof value === 'number' ? value : -2;
+}
+
+export async function redisIncr(key: string): Promise<number> {
+  const value = await runRawRedisCommand(['INCR', key]);
+
+  if (typeof value !== 'number') {
+    throw new Error('Redis INCR 返回值无效');
+  }
+
+  return value;
+}
+
+export async function redisDecr(key: string): Promise<number> {
+  const value = await runRawRedisCommand(['DECR', key]);
+
+  if (typeof value !== 'number') {
+    throw new Error('Redis DECR 返回值无效');
+  }
+
+  return value;
+}
+
+export async function redisExpire(key: string, seconds: number): Promise<void> {
+  await runRawRedisCommand(['EXPIRE', key, String(seconds)]);
+}
+
+export async function redisZAdd(key: string, score: number, member: string): Promise<void> {
+  await runRawRedisCommand(['ZADD', key, String(score), member]);
+}
+
+export async function redisZRangeByScore(
+  key: string,
+  min: number | string,
+  max: number | string,
+): Promise<string[]> {
+  const value = await runRawRedisCommand(['ZRANGEBYSCORE', key, String(min), String(max)]);
+
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
+}
+
+export async function redisZRem(key: string, member: string): Promise<void> {
+  await runRawRedisCommand(['ZREM', key, member]);
 }

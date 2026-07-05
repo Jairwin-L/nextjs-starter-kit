@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react';
 import { Dropdown, Skeleton } from 'antd';
 import type { MenuProps } from 'antd';
 import { usePermission } from '@/hooks/use-permission';
-import { signOut } from '@/services/auth';
-import type { AuthUser } from '@/services/auth';
+import { signOut } from '@/api/modules/auth';
+import type { AuthUser } from '@/api/modules/auth';
 import styles from './index.module.scss';
 
 function getDisplayName(user: AuthUser | null): string {
@@ -60,6 +60,16 @@ export function AccountMenu() {
       return;
     }
 
+    if (key === 'ai-settings') {
+      router.push('/account/setting/ai');
+      return;
+    }
+
+    if (key === 'third-party-service') {
+      router.push('/account/setting/third-party-service');
+      return;
+    }
+
     if (key === 'admin') {
       router.push('/admin');
       return;
@@ -74,8 +84,17 @@ export function AccountMenu() {
   const shouldShowAvatarImage = Boolean(user?.picture && !avatarFailed);
   const menuItems: MenuProps['items'] = [
     { key: 'profile', label: '我的资料' },
+    { key: 'ai-settings', label: 'AI 密钥' },
+    { key: 'third-party-service', label: '第三方服务凭据' },
+    { type: 'divider' },
     ...(hasRole('admin') ? [{ key: 'admin', label: '管理系统' }] : []),
-    { key: 'sign-out', disabled: signingOut, label: signingOut ? '退出中...' : '退出登录' },
+    { type: 'divider' },
+    {
+      key: 'sign-out',
+      disabled: signingOut,
+      danger: true,
+      label: signingOut ? '退出中...' : '退出登录',
+    },
   ];
 
   if (!isReady) {

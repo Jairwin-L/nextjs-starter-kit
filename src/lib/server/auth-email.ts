@@ -1,14 +1,6 @@
 import { APP_NAME } from '@/constants';
 import type { AuthCodePurpose } from './auth-verification';
 
-interface ResendEmailResponse {
-  error?: {
-    message?: string;
-    name?: string;
-  };
-  id?: string;
-}
-
 function getResendApiKey(): string {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -88,7 +80,7 @@ export async function sendVerificationCodeEmail(
       text: buildVerificationEmailText(code, purpose),
     }),
   });
-  const payload = (await response.json()) as ResendEmailResponse;
+  const payload = (await response.json()) as IServer.ResendEmailResponse;
 
   if (!response.ok || payload.error) {
     throw new Error(payload.error?.message || '验证码邮件发送失败');

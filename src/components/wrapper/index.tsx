@@ -1,14 +1,13 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { usePermission } from '@/hooks/use-permission';
-import type { AuthPayload } from '@/services/auth';
 import { useAuthSessionStore } from '@/stores/auth-session';
 import ClientSideOnly from '../client-side-only';
 import Loading from '../loading';
 
-const AUTHENTICATED_PATHS = ['/articles', '/upload'];
+const AUTHENTICATED_PATHS = ['/account/setting', '/articles', '/upload'];
 const ADMIN_PATH = '/admin';
 
 function requiresAuthentication(pathname: string): boolean {
@@ -19,12 +18,7 @@ function isAdminPath(pathname: string): boolean {
   return pathname === ADMIN_PATH || pathname.startsWith(`${ADMIN_PATH}/`);
 }
 
-interface WrapperProps {
-  children: ReactNode;
-  initialAuthPayload: AuthPayload | null;
-}
-
-export default function Wrapper({ children, initialAuthPayload }: WrapperProps) {
+export default function Wrapper({ children, initialAuthPayload }: IComponent.WrapperProps) {
   const pathname = usePathname();
   const router = useRouter();
   const setPayload = useAuthSessionStore((state) => state.setPayload);

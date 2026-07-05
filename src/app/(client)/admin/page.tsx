@@ -11,18 +11,13 @@ import { Button, Card, Col, Row, Skeleton, Statistic, Tag } from 'antd';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePermission } from '@/hooks/use-permission';
-import { getPermissions, getRoles } from '@/services/admin';
+import { getPermissions, getRoles } from '@/api/modules/admin';
 import styles from './page.module.scss';
 
-interface OverviewData {
-  permissionCount: number;
-  roleCount: number;
-}
-
-const initialData: OverviewData = { permissionCount: 0, roleCount: 0 };
+const initialData: IAppPages.AdminOverviewData = { permissionCount: 0, roleCount: 0 };
 
 export default function AdminPage() {
-  const [data, setData] = useState<OverviewData>(initialData);
+  const [data, setData] = useState<IAppPages.AdminOverviewData>(initialData);
   const [loading, setLoading] = useState(true);
   const { isReady, user } = usePermission();
   const currentUserStatus = user ? '已验证' : '查看会话';

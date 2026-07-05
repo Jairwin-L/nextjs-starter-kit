@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { getAuthUserBySessionToken, getSessionCookieName } from '@/lib/server/auth-session';
 import Link from 'next/link';
@@ -6,11 +5,7 @@ import { APP_BLACK_LOGO, APP_NAME } from '@/constants';
 import { AccountMenu } from './components/account-menu';
 import styles from './index.module.scss';
 
-export default async function SiteLayout({
-  children,
-}: Readonly<{
-  children: ReactNode;
-}>) {
+export default async function SiteLayout({ children }: Readonly<IComponent.ChildrenProps>) {
   const cookieStore = await cookies();
   const token = cookieStore.get(getSessionCookieName())?.value;
   const user = await getAuthUserBySessionToken(token);
@@ -33,7 +28,7 @@ export default async function SiteLayout({
           </div>
         </nav>
       </header>
-      {children}
+      <main className={styles['site-main-container']}>{children}</main>
     </>
   );
 }

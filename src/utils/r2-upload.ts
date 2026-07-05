@@ -3,25 +3,8 @@
  * R2 浏览器直传工具函数。
  */
 
-export interface PresignedUrlItem {
-  url: string;
-  key: string;
-  fileName: string;
-  expiresAt: string;
-  maxFileSize: number;
-}
-
-export interface UploadProgressInfo {
-  progress: number;
-  loaded: number;
-  total: number;
-}
-
-interface PresignedResponse {
-  success: boolean;
-  data?: PresignedUrlItem[];
-  message?: string;
-}
+export type PresignedUrlItem = IUploadApi.PresignedUrlItem;
+export type UploadProgressInfo = IUtils.UploadProgressInfo;
 
 /**
  * @func getFileMimeType
@@ -70,7 +53,7 @@ export async function requestPresignedUrls(
       })),
     }),
   });
-  const result = (await response.json()) as PresignedResponse;
+  const result = (await response.json()) as IUploadApi.PresignedResponse;
 
   if (!response.ok || !result.success || !result.data) {
     throw new Error(result.message || '生成预签名上传地址失败');

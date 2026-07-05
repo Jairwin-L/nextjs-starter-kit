@@ -7,16 +7,9 @@ import '@/components/tiptap-ui-primitive/button/button-colors.scss';
 import '@/components/tiptap-ui-primitive/button/button-group.scss';
 import '@/components/tiptap-ui-primitive/button/button.scss';
 
-type PlatformShortcuts = Record<string, string>;
+export type ButtonProps = ITiptapPrimitive.ButtonProps;
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  className?: string;
-  showTooltip?: boolean;
-  tooltip?: React.ReactNode;
-  shortcutKeys?: string;
-}
-
-export const MAC_SYMBOLS: PlatformShortcuts = {
+export const MAC_SYMBOLS: ITiptapPrimitive.PlatformShortcuts = {
   ctrl: '⌘',
   alt: '⌥',
   shift: '⇧',
@@ -39,7 +32,7 @@ export const parseShortcutKeys = (shortcutKeys: string | undefined, isMac: boole
     .map((key) => formatShortcutKey(key, isMac));
 };
 
-export const ShortcutDisplay: React.FC<{ shortcuts: string[] }> = ({ shortcuts }) => {
+export const ShortcutDisplay: React.FC<IComponent.ShortcutDisplayProps> = ({ shortcuts }) => {
   if (shortcuts.length === 0) return null;
 
   return (

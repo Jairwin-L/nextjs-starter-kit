@@ -2,14 +2,7 @@
 
 import * as React from 'react';
 
-type SpacerOrientation = 'horizontal' | 'vertical';
-
-interface SpacerProps extends React.HTMLAttributes<HTMLDivElement> {
-  orientation?: SpacerOrientation;
-  size?: string | number;
-}
-
-export const Spacer = React.forwardRef<HTMLDivElement, SpacerProps>(
+export const Spacer = React.forwardRef<HTMLDivElement, ITiptapPrimitive.SpacerProps>(
   ({ orientation = 'horizontal', size, className = '', style = {}, ...props }, ref) => {
     const computedStyle = {
       ...style,

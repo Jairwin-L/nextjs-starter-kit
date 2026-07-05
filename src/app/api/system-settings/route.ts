@@ -16,21 +16,24 @@ const DEFAULT_SETTINGS = {
   allow_registration: true,
   maintenance_mode: false,
   session_policy: 'standard',
+  byok_allowed_origins: '',
 };
 const supportedLanguages = new Set(['zh-CN', 'en-US']);
 const supportedSessionPolicies = new Set(['standard', 'strict']);
-
-interface SystemSettingsPayload {
-  allowRegistration?: unknown;
-  defaultLanguage?: unknown;
-  displayName?: unknown;
-  maintenanceMode?: unknown;
-  sessionPolicy?: unknown;
-  supportEmail?: unknown;
-}
+const systemSettingsSelect = {
+  allow_registration: true,
+  byok_allowed_origins: true,
+  default_language: true,
+  display_name: true,
+  maintenance_mode: true,
+  session_policy: true,
+  support_email: true,
+  updated_at: true,
+} as const;
 
 function toSettingsResponse(settings: {
   allow_registration: boolean;
+  byok_allowed_origins: string;
   default_language: string;
   display_name: string;
   maintenance_mode: boolean;
@@ -43,6 +46,7 @@ function toSettingsResponse(settings: {
     supportEmail: settings.support_email ?? '',
     defaultLanguage: settings.default_language,
     allowRegistration: settings.allow_registration,
+    byokAllowedOrigins: settings.byok_allowed_origins,
     maintenanceMode: settings.maintenance_mode,
     sessionPolicy: settings.session_policy,
     updatedAt: settings.updated_at,
@@ -92,6 +96,68 @@ function getAllowedValue(value: unknown, fieldName: string, allowedValues: Set<s
   return selectedValue;
 }
 
+function getOptionalStringValue(value: unknown, fieldName: string, maxLength: number): string {
+  if (value === undefined || value === null || value === '') {
+    return '';
+  }
+
+  if (typeof value !== 'string') {
+    throw new Error(`${fieldName} 必须是字符串`);
+  }
+
+  const trimmedValue = value.trim();
+
+  if (trimmedValue.length > maxLength) {
+    throw new Error(`${fieldName} 无效`);
+  }
+
+  return trimmedValue;
+}
+
+function normalizeByokAllowedOrigins(value: unknown): string {
+  const rawValue = getOptionalStringValue(value, 'byokAllowedOrigins', 2000);
+
+  if (!rawValue) {
+    return '';
+  }
+
+  const origins = rawValue
+    .split(/[\n,]/u)
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  const normalizedOrigins: string[] = [];
+
+  for (const origin of origins) {
+    if (origin === '*') {
+      throw new Error('BYOK Origin 不允许使用通配符');
+    }
+
+    let parsed: URL;
+
+    try {
+      parsed = new URL(origin);
+    } catch {
+      throw new Error('BYOK Origin 格式无效');
+    }
+
+    if (
+      parsed.origin !== origin ||
+      parsed.pathname !== '/' ||
+      parsed.search ||
+      parsed.hash ||
+      !['http:', 'https:'].includes(parsed.protocol)
+    ) {
+      throw new Error('BYOK Origin 必须是精确 origin，例如 https://example.com');
+    }
+
+    if (!normalizedOrigins.includes(parsed.origin)) {
+      normalizedOrigins.push(parsed.origin);
+    }
+  }
+
+  return normalizedOrigins.join('\n');
+}
+
 function isMissingSystemSettingsTable(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2021';
 }
@@ -104,7 +170,7 @@ function getStorageErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
-function validatePayload(payload: SystemSettingsPayload) {
+function validatePayload(payload: ISettingsApi.SystemSettingsPayload) {
   return {
     display_name: getStringValue(payload.displayName, 'displayName', 80),
     support_email: getOptionalEmail(payload.supportEmail),
@@ -120,6 +186,7 @@ function validatePayload(payload: SystemSettingsPayload) {
       'sessionPolicy',
       supportedSessionPolicies,
     ),
+    byok_allowed_origins: normalizeByokAllowedOrigins(payload.byokAllowedOrigins),
   };
 }
 
@@ -129,6 +196,7 @@ const getSystemSettingsHandler: ApiHandler = async () => {
       where: { id: SETTINGS_ID },
       create: { id: SETTINGS_ID, ...DEFAULT_SETTINGS },
       update: {},
+      select: systemSettingsSelect,
     });
 
     return createSuccessResponse(toSettingsResponse(settings), '系统设置查询成功');
@@ -143,9 +211,9 @@ const getSystemSettingsHandler: ApiHandler = async () => {
 };
 
 const updateSystemSettingsHandler: ApiHandler = async (request: NextRequest) => {
-  let payload: SystemSettingsPayload;
+  let payload: ISettingsApi.SystemSettingsPayload;
   try {
-    payload = (await request.json()) as SystemSettingsPayload;
+    payload = (await request.json()) as ISettingsApi.SystemSettingsPayload;
   } catch (error) {
     return createErrorResponse(DATA_ERROR.VALIDATION_FAILED, '请求 JSON 格式无效', error, 400);
   }
@@ -156,6 +224,7 @@ const updateSystemSettingsHandler: ApiHandler = async (request: NextRequest) => 
       where: { id: SETTINGS_ID },
       create: { id: SETTINGS_ID, ...DEFAULT_SETTINGS, ...data },
       update: { ...data, updated_at: new Date() },
+      select: systemSettingsSelect,
     });
 
     return createSuccessResponse(toSettingsResponse(settings), '系统设置更新成功');

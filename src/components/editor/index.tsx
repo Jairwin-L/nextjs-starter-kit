@@ -166,15 +166,8 @@ const MobileToolbarContent = ({
   </>
 );
 
-interface SimpleEditorProps {
-  content?: string;
-  value?: string;
-  onUpdate?: (html: string) => void;
-  onChange?: (html: string) => void;
-}
-
 export const SimpleEditor = React.forwardRef(
-  ({ content, value, onUpdate, onChange }: SimpleEditorProps, ref) => {
+  ({ content, value, onUpdate, onChange }: IEditorComponent.SimpleEditorProps, ref) => {
     const isMobile = useMobile();
     const windowSize = useWindowSize();
     const editorContent = value ?? content ?? '';
@@ -186,6 +179,7 @@ export const SimpleEditor = React.forwardRef(
       height: 0,
     });
     const toolbarRef = React.useRef<HTMLDivElement>(null);
+    const [modal, modalContextHolder] = Modal.useModal();
 
     // React.useEffect(() => {
     //   const updateRect = () => {
@@ -317,7 +311,7 @@ export const SimpleEditor = React.forwardRef(
     const addYoutubeVideo = () => {
       let youtubeUrl = '';
 
-      Modal.confirm({
+      modal.confirm({
         title: 'Enter YouTube URL',
         content: (
           <Input
@@ -353,36 +347,39 @@ export const SimpleEditor = React.forwardRef(
     }
 
     return (
-      <EditorContext.Provider value={{ editor }}>
-        <Toolbar
-          ref={toolbarRef}
-          // style={
-          //   isMobile
-          //     ? {
-          //         bottom: `calc(100% - ${windowSize.height - rect.y}px)`
-          //       }
-          //     : {}
-          // }
-        >
-          {mobileView === 'main' ? (
-            <MainToolbarContent
-              onHighlighterClick={() => setMobileView('highlighter')}
-              onLinkClick={() => setMobileView('link')}
-              addYoutubeVideo={addYoutubeVideo}
-              isMobile={isMobile}
-            />
-          ) : (
-            <MobileToolbarContent
-              type={mobileView === 'highlighter' ? 'highlighter' : 'link'}
-              onBack={() => setMobileView('main')}
-            />
-          )}
-        </Toolbar>
+      <>
+        {modalContextHolder}
+        <EditorContext.Provider value={{ editor }}>
+          <Toolbar
+            ref={toolbarRef}
+            // style={
+            //   isMobile
+            //     ? {
+            //         bottom: `calc(100% - ${windowSize.height - rect.y}px)`
+            //       }
+            //     : {}
+            // }
+          >
+            {mobileView === 'main' ? (
+              <MainToolbarContent
+                onHighlighterClick={() => setMobileView('highlighter')}
+                onLinkClick={() => setMobileView('link')}
+                addYoutubeVideo={addYoutubeVideo}
+                isMobile={isMobile}
+              />
+            ) : (
+              <MobileToolbarContent
+                type={mobileView === 'highlighter' ? 'highlighter' : 'link'}
+                onBack={() => setMobileView('main')}
+              />
+            )}
+          </Toolbar>
 
-        <div className="content-wrapper" onMouseDown={handleEditorContainerMouseDown}>
-          <EditorContent editor={editor} role="presentation" className="simple-editor-content" />
-        </div>
-      </EditorContext.Provider>
+          <div className="content-wrapper" onMouseDown={handleEditorContainerMouseDown}>
+            <EditorContent editor={editor} role="presentation" className="simple-editor-content" />
+          </div>
+        </EditorContext.Provider>
+      </>
     );
   },
 );

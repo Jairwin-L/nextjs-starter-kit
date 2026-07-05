@@ -6,14 +6,8 @@ import { useEffect, useState } from 'react';
 import { Button, Form, Input, Typography } from 'antd';
 import type { FormInstance } from 'antd';
 import { APP_BLACK_LOGO, APP_NAME, VERIFICATION_CODE_TTL_SECONDS } from '@/constants';
-import { requestVerificationCode, signUp } from '@/services/auth';
+import { requestVerificationCode, signUp } from '@/api/modules/auth';
 import styles from './page.module.scss';
-
-interface SignUpValues {
-  code: string;
-  email: string;
-  password: string;
-}
 
 async function requestCode(
   form: FormInstance,
@@ -34,7 +28,7 @@ async function requestCode(
 
 export default function SignUpPage() {
   const router = useRouter();
-  const [form] = Form.useForm<SignUpValues>();
+  const [form] = Form.useForm<IAppForms.SignUpValues>();
   const [submitLoading, setSubmitLoading] = useState(false);
   const [codeCountdown, setCodeCountdown] = useState(0);
   const [codeLoading, setCodeLoading] = useState(false);
@@ -51,7 +45,7 @@ export default function SignUpPage() {
     return () => window.clearTimeout(timer);
   }, [codeCountdown]);
 
-  async function onFinish(values: SignUpValues): Promise<void> {
+  async function onFinish(values: IAppForms.SignUpValues): Promise<void> {
     setSubmitLoading(true);
     try {
       await signUp(values);

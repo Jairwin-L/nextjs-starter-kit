@@ -1,29 +1,15 @@
 'use client';
 
 import { useCallback } from 'react';
-import type { AuthUser } from '@/services/auth';
 import { useAuthSessionStore } from '@/stores/auth-session';
-import type { UserProfile } from '@/services/users';
 
-export type PermissionCode = string;
-
-interface PermissionResult {
-  isLoading: boolean;
-  isReady: boolean;
-  user: AuthUser | null;
-  clearSession: () => void;
-  hasPermission: (code: PermissionCode) => boolean;
-  hasAnyPermission: (codes: PermissionCode[]) => boolean;
-  hasAllPermissions: (codes: PermissionCode[]) => boolean;
-  hasRole: (role: string) => boolean;
-  setCurrentUserProfile: (profile: UserProfile) => void;
-}
+export type PermissionCode = IHooks.PermissionCode;
 
 /**
  * Reads the global session's roles and permission codes for client-side display decisions.
  * Server-side authorization must still be enforced by the corresponding route or API handler.
  */
-export function usePermission(): PermissionResult {
+export function usePermission(): IHooks.PermissionResult {
   const payload = useAuthSessionStore((state) => state.payload);
   const isLoading = useAuthSessionStore((state) => state.isLoading);
   const isReady = useAuthSessionStore((state) => state.isReady);

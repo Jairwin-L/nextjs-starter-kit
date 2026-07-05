@@ -6,45 +6,45 @@ import {
   SettingOutlined,
   UserSwitchOutlined,
 } from '@ant-design/icons';
-import { App, Alert, Button, Card, Divider, Form, Input, Select, Switch, Tabs } from 'antd';
+import { Button, Card, Divider, Form, Input, Select, Switch, Tabs } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
-import { getSystemSettings, updateSystemSettings } from '@/services/admin';
-import styles from '../resource-page.module.scss';
-import settingsStyles from './page.module.scss';
+import { getSystemSettings, updateSystemSettings, type SystemSettings } from '@/api/modules/admin';
+import styles from './page.module.scss';
 
-interface SettingsValues {
-  allowRegistration: boolean;
-  defaultLanguage: 'en-US' | 'zh-CN';
-  displayName: string;
-  maintenanceMode: boolean;
-  sessionPolicy: 'standard' | 'strict';
-  supportEmail?: string;
-}
-
-const initialValues: SettingsValues = {
+const initialValues: IAppForms.SettingsValues = {
   displayName: 'Next.js Starter Kit',
   supportEmail: '',
   defaultLanguage: 'zh-CN',
   allowRegistration: true,
+  byokAllowedOrigins: '',
   maintenanceMode: false,
   sessionPolicy: 'standard',
 };
 
+function getSettingsFormValues(settings: SystemSettings): IAppForms.SettingsValues {
+  return {
+    displayName: settings.displayName,
+    supportEmail: settings.supportEmail,
+    defaultLanguage: settings.defaultLanguage,
+    allowRegistration: settings.allowRegistration,
+    byokAllowedOrigins: settings.byokAllowedOrigins,
+    maintenanceMode: settings.maintenanceMode,
+    sessionPolicy: settings.sessionPolicy,
+  };
+}
+
 export default function SystemSettingsPage() {
-  const { message } = App.useApp();
-  const [form] = Form.useForm<SettingsValues>();
+  const [form] = Form.useForm<IAppForms.SettingsValues>();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const settings = await getSystemSettings();
-      form.setFieldsValue(settings);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : '无法加载系统设置');
+      form.setFieldsValue(getSettingsFormValues(settings));
+    } catch {
+      // 请求错误由 alova 全局提示处理。
     } finally {
       setLoading(false);
     }
@@ -54,13 +54,15 @@ export default function SystemSettingsPage() {
     loadSettings();
   }, [loadSettings]);
 
-  async function onFinish(values: SettingsValues) {
+  async function onFinish(values: IAppForms.SettingsValues) {
     setSaving(true);
     try {
-      await updateSystemSettings({ ...values, supportEmail: values.supportEmail ?? '' });
-      message.success('系统设置已保存');
-    } catch (requestError) {
-      message.error(requestError instanceof Error ? requestError.message : '保存系统设置失败');
+      await updateSystemSettings({
+        ...values,
+        supportEmail: values.supportEmail ?? '',
+      });
+    } catch {
+      // 请求错误由 alova 全局提示处理。
     } finally {
       setSaving(false);
     }
@@ -76,19 +78,7 @@ export default function SystemSettingsPage() {
           <p>管理可公开维护的展示与访问策略，不包含任何密钥、环境变量或部署配置。</p>
         </div>
       </section>
-
-      <Alert
-        className={styles.alert}
-        description={
-          error ||
-          '接口只读写安全的展示与访问策略字段。密钥、连接串、部署地址和环境变量均不会显示或修改。'
-        }
-        title={error ? '无法加载系统设置' : '安全边界'}
-        showIcon
-        type={error ? 'error' : 'info'}
-      />
-
-      <Card className={settingsStyles.card} loading={loading} variant="borderless">
+      <Card className={styles.card} loading={loading} variant="borderless">
         <Form form={form} initialValues={initialValues} layout="vertical" onFinish={onFinish}>
           <Tabs
             items={[
@@ -100,7 +90,7 @@ export default function SystemSettingsPage() {
                   </>
                 ),
                 children: (
-                  <div className={settingsStyles.section}>
+                  <div className={styles.section}>
                     <Form.Item
                       label="站点显示名称"
                       name="displayName"
@@ -134,7 +124,7 @@ export default function SystemSettingsPage() {
                   </>
                 ),
                 children: (
-                  <div className={settingsStyles.section}>
+                  <div className={styles.section}>
                     <Form.Item
                       label="允许新用户注册"
                       name="allowRegistration"
@@ -152,6 +142,18 @@ export default function SystemSettingsPage() {
                       />
                     </Form.Item>
                     <Divider />
+                    <Form.Item
+                      label="BYOK 允许来源"
+                      name="byokAllowedOrigins"
+                      extra="每行一个精确 Origin，例如 https://example.com；留空会拒绝 BYOK 保存、删除和聊天请求。"
+                    >
+                      <Input.TextArea
+                        autoSize={{ minRows: 3, maxRows: 6 }}
+                        maxLength={2000}
+                        placeholder="https://example.com"
+                      />
+                    </Form.Item>
+                    <Divider />
                     <Form.Item label="维护模式" name="maintenanceMode" valuePropName="checked">
                       <Switch checkedChildren="开启" unCheckedChildren="关闭" />
                     </Form.Item>
@@ -160,7 +162,7 @@ export default function SystemSettingsPage() {
               },
             ]}
           />
-          <div className={settingsStyles.footer}>
+          <div className={styles.footer}>
             <Button
               htmlType="button"
               onClick={async () => {

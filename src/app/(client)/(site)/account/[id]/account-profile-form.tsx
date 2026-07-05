@@ -1,29 +1,15 @@
 'use client';
 
 import { EditOutlined, SaveOutlined } from '@ant-design/icons';
-import { App, Button, Form, Input } from 'antd';
+import { Button, Form, Input } from 'antd';
 import { useState } from 'react';
 import { usePermission } from '@/hooks/use-permission';
-import { updateUser, type UserProfile } from '@/services/users';
+import { updateUser } from '@/api/modules/users';
 import styles from './page.module.scss';
 
-interface ProfileFormValues {
-  bio?: string;
-  nick_name?: string;
-}
-
-interface AccountProfileFormProps {
-  profile: UserProfile;
-}
-
-function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : '资料更新失败，请稍后重试';
-}
-
-export function AccountProfileForm({ profile }: AccountProfileFormProps) {
-  const { message } = App.useApp();
+export function AccountProfileForm({ profile }: IAppPages.AccountProfileFormProps) {
   const { setCurrentUserProfile } = usePermission();
-  const [form] = Form.useForm<ProfileFormValues>();
+  const [form] = Form.useForm<IAppForms.ProfileFormValues>();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -43,15 +29,15 @@ export function AccountProfileForm({ profile }: AccountProfileFormProps) {
     form.submit();
   }
 
-  async function onFinish(values: ProfileFormValues) {
+  async function onFinish(values: IAppForms.ProfileFormValues) {
     setSaving(true);
 
     try {
       const updatedProfile = await updateUser(profile.id, values);
       setCurrentUserProfile(updatedProfile);
       setEditing(false);
-    } catch (error) {
-      message.error(getErrorMessage(error));
+    } catch {
+      // 请求错误由 alova 全局提示处理。
     } finally {
       setSaving(false);
     }

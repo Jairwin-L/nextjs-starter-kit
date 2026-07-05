@@ -6,29 +6,9 @@ import { NodeViewWrapper } from '@tiptap/react';
 import { CloseIcon } from '@/components/tiptap-icons/close-icon';
 import '@/components/tiptap-node/image-upload-node/image-upload-node.scss';
 
-export interface FileItem {
-  id: string;
-  file: File;
-  progress: number;
-  status: 'uploading' | 'success' | 'error';
-  url?: string;
-  abortController?: AbortController;
-}
+export type FileItem = ITiptapNode.FileItem;
 
-interface UploadOptions {
-  maxSize: number;
-  limit: number;
-  accept: string;
-  upload: (
-    file: File,
-    onProgress: (event: { progress: number }) => void,
-    signal: AbortSignal,
-  ) => Promise<string>;
-  onSuccess?: (url: string) => void;
-  onError?: (error: Error) => void;
-}
-
-function useFileUpload(options: UploadOptions) {
+function useFileUpload(options: ITiptapNode.UploadOptions) {
   const [fileItem, setFileItem] = React.useState<FileItem | null>(null);
 
   const uploadFile = async (file: File): Promise<string | null> => {
@@ -196,12 +176,10 @@ const FileCornerIcon: React.FC = () => (
   </svg>
 );
 
-interface ImageUploadDragAreaProps {
-  onFile: (files: File[]) => void;
-  children?: React.ReactNode;
-}
-
-const ImageUploadDragArea: React.FC<ImageUploadDragAreaProps> = ({ onFile, children }) => {
+const ImageUploadDragArea: React.FC<ITiptapNode.ImageUploadDragAreaProps> = ({
+  onFile,
+  children,
+}) => {
   const [dragover, setDragover] = React.useState(false);
 
   const onDrop = (e: React.DragEvent<HTMLDivElement>) => {
@@ -237,14 +215,7 @@ const ImageUploadDragArea: React.FC<ImageUploadDragAreaProps> = ({ onFile, child
   );
 };
 
-interface ImageUploadPreviewProps {
-  file: File;
-  progress: number;
-  status: 'uploading' | 'success' | 'error';
-  onRemove: () => void;
-}
-
-const ImageUploadPreview: React.FC<ImageUploadPreviewProps> = ({
+const ImageUploadPreview: React.FC<ITiptapNode.ImageUploadPreviewProps> = ({
   file,
   progress,
   status,
@@ -293,7 +264,7 @@ const ImageUploadPreview: React.FC<ImageUploadPreviewProps> = ({
   );
 };
 
-const DropZoneContent: React.FC<{ maxSize: number }> = ({ maxSize }) => (
+const DropZoneContent: React.FC<ITiptapNode.DropZoneContentProps> = ({ maxSize }) => (
   <>
     <div className="tiptap-image-upload-dropzone">
       <FileIcon />
@@ -319,7 +290,7 @@ export const ImageUploadNode: React.FC<NodeViewProps> = (props) => {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const { extension } = props;
 
-  const uploadOptions: UploadOptions = {
+  const uploadOptions: ITiptapNode.UploadOptions = {
     maxSize,
     limit,
     accept,

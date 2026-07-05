@@ -2,13 +2,7 @@ import crypto from 'node:crypto';
 import { VERIFICATION_CODE_TTL_SECONDS } from '@/constants';
 import { redisDel, redisGet, redisSetEx } from './redis';
 
-export type AuthCodePurpose = 'sign-in' | 'sign-up';
-
-interface StoredVerificationCode {
-  attempts: number;
-  codeHash: string;
-  expiresAt: number;
-}
+export type AuthCodePurpose = IServer.AuthCodePurpose;
 
 const CODE_TTL_SECONDS = VERIFICATION_CODE_TTL_SECONDS;
 const MAX_VERIFY_ATTEMPTS = 5;
@@ -38,7 +32,7 @@ function createCodeKey(email: string, purpose: AuthCodePurpose): string {
   return `auth:verification:${purpose}:${hashValue(email)}`;
 }
 
-function isStoredVerificationCode(value: unknown): value is StoredVerificationCode {
+function isStoredVerificationCode(value: unknown): value is IServer.StoredVerificationCode {
   return (
     typeof value === 'object' &&
     value !== null &&
@@ -69,7 +63,7 @@ export async function saveVerificationCode(
   code: string,
 ): Promise<void> {
   const normalizedEmail = normalizeEmail(email);
-  const payload: StoredVerificationCode = {
+  const payload: IServer.StoredVerificationCode = {
     attempts: 0,
     codeHash: hashCode(normalizedEmail, purpose, code),
     expiresAt: Date.now() + CODE_TTL_SECONDS * 1000,

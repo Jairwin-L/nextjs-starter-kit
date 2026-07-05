@@ -17,29 +17,7 @@ import {
 } from '@floating-ui/react';
 import '@/components/tiptap-ui-primitive/popover/popover.scss';
 
-type PopoverContextValue = ReturnType<typeof usePopover> & {
-  setLabelId: (id: string | undefined) => void;
-  setDescriptionId: (id: string | undefined) => void;
-  updatePosition: (
-    side: 'top' | 'right' | 'bottom' | 'left',
-    align: 'start' | 'center' | 'end',
-  ) => void;
-};
-
-interface PopoverOptions {
-  initialOpen?: boolean;
-  modal?: boolean;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  side?: 'top' | 'right' | 'bottom' | 'left';
-  align?: 'start' | 'center' | 'end';
-}
-
-interface PopoverProps extends PopoverOptions {
-  children: React.ReactNode;
-}
-
-const PopoverContext = React.createContext<PopoverContextValue | null>(null);
+const PopoverContext = React.createContext<ITiptapPrimitive.PopoverContextValue | null>(null);
 
 function usePopoverContext() {
   const context = React.useContext(PopoverContext);
@@ -56,7 +34,7 @@ function usePopover({
   onOpenChange: setControlledOpen,
   side = 'bottom',
   align = 'center',
-}: PopoverOptions = {}) {
+}: ITiptapPrimitive.PopoverOptions = {}) {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(initialOpen);
   const [labelId, setLabelId] = React.useState<string>();
   const [descriptionId, setDescriptionId] = React.useState<string>();
@@ -119,16 +97,12 @@ function usePopover({
   );
 }
 
-function Popover({ children, modal = false, ...options }: PopoverProps) {
+function Popover({ children, modal = false, ...options }: ITiptapPrimitive.PopoverProps) {
   const popover = usePopover({ modal, ...options });
   return <PopoverContext.Provider value={popover}>{children}</PopoverContext.Provider>;
 }
 
-interface TriggerElementProps extends React.HTMLProps<HTMLElement> {
-  asChild?: boolean;
-}
-
-const PopoverTrigger = React.forwardRef<HTMLElement, TriggerElementProps>(
+const PopoverTrigger = React.forwardRef<HTMLElement, ITiptapPrimitive.PopoverTriggerProps>(
   ({ children, asChild = false, ...props }, propRef) => {
     const context = usePopoverContext();
     const childrenRef = React.isValidElement(children) ? (children.props as any).ref : undefined;
@@ -158,14 +132,7 @@ const PopoverTrigger = React.forwardRef<HTMLElement, TriggerElementProps>(
   },
 );
 
-interface PopoverContentProps extends React.HTMLProps<HTMLDivElement> {
-  side?: 'top' | 'right' | 'bottom' | 'left';
-  align?: 'start' | 'center' | 'end';
-  portal?: boolean;
-  portalProps?: Omit<React.ComponentProps<typeof FloatingPortal>, 'children'>;
-}
-
-const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
+const PopoverContent = React.forwardRef<HTMLDivElement, ITiptapPrimitive.PopoverContentProps>(
   (
     {
       className,

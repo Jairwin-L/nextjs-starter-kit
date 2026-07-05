@@ -14,42 +14,9 @@ import {
   useInteractions,
   useMergeRefs,
   FloatingPortal,
-  type Placement,
-  type UseFloatingReturn,
-  type ReferenceType,
   FloatingDelayGroup,
 } from '@floating-ui/react';
 import '@/components/tiptap-ui-primitive/tooltip/tooltip.scss';
-
-interface TooltipProviderProps {
-  children: React.ReactNode;
-  initialOpen?: boolean;
-  placement?: Placement;
-  open?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  delay?: number;
-  closeDelay?: number;
-  timeout?: number;
-  useDelayGroup?: boolean;
-}
-
-interface TooltipTriggerProps extends Omit<React.HTMLProps<HTMLElement>, 'ref'> {
-  asChild?: boolean;
-  children: React.ReactNode;
-}
-
-interface TooltipContentProps extends Omit<React.HTMLProps<HTMLDivElement>, 'ref'> {
-  children?: React.ReactNode;
-  portal?: boolean;
-  portalProps?: Omit<React.ComponentProps<typeof FloatingPortal>, 'children'>;
-}
-
-interface TooltipContextValue extends UseFloatingReturn<ReferenceType> {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  getReferenceProps: (userProps?: React.HTMLProps<HTMLElement>) => Record<string, unknown>;
-  getFloatingProps: (userProps?: React.HTMLProps<HTMLDivElement>) => Record<string, unknown>;
-}
 
 function useTooltip({
   initialOpen = false,
@@ -58,7 +25,7 @@ function useTooltip({
   onOpenChange: setControlledOpen,
   delay = 600,
   closeDelay = 0,
-}: Omit<TooltipProviderProps, 'children'> = {}) {
+}: Omit<ITiptapPrimitive.TooltipProviderProps, 'children'> = {}) {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState<boolean>(initialOpen);
 
   const open = controlledOpen ?? uncontrolledOpen;
@@ -110,7 +77,7 @@ function useTooltip({
   );
 }
 
-const TooltipContext = React.createContext<TooltipContextValue | null>(null);
+const TooltipContext = React.createContext<ITiptapPrimitive.TooltipContextValue | null>(null);
 
 function useTooltipContext() {
   const context = React.useContext(TooltipContext);
@@ -122,7 +89,7 @@ function useTooltipContext() {
   return context;
 }
 
-export function Tooltip({ children, ...props }: TooltipProviderProps) {
+export function Tooltip({ children, ...props }: ITiptapPrimitive.TooltipProviderProps) {
   const tooltip = useTooltip(props);
 
   if (!props.useDelayGroup) {
@@ -139,7 +106,7 @@ export function Tooltip({ children, ...props }: TooltipProviderProps) {
   );
 }
 
-export const TooltipTrigger = React.forwardRef<HTMLElement, TooltipTriggerProps>(
+export const TooltipTrigger = React.forwardRef<HTMLElement, ITiptapPrimitive.TooltipTriggerProps>(
   ({ children, asChild = false, ...props }, propRef) => {
     const context = useTooltipContext();
     const childrenRef = React.isValidElement(children) ? (children.props as any).ref : undefined;
@@ -169,34 +136,35 @@ export const TooltipTrigger = React.forwardRef<HTMLElement, TooltipTriggerProps>
   },
 );
 
-export const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
-  ({ style, children, portal = true, portalProps = {}, ...props }, propRef) => {
-    const context = useTooltipContext();
-    const ref = useMergeRefs([context.refs.setFloating, propRef]);
+export const TooltipContent = React.forwardRef<
+  HTMLDivElement,
+  ITiptapPrimitive.TooltipContentProps
+>(({ style, children, portal = true, portalProps = {}, ...props }, propRef) => {
+  const context = useTooltipContext();
+  const ref = useMergeRefs([context.refs.setFloating, propRef]);
 
-    if (!context.open) return null;
+  if (!context.open) return null;
 
-    const content = (
-      <div
-        ref={ref}
-        style={{
-          ...context.floatingStyles,
-          ...style,
-        }}
-        {...context.getFloatingProps(props)}
-        className="tiptap-tooltip"
-      >
-        {children}
-      </div>
-    );
+  const content = (
+    <div
+      ref={ref}
+      style={{
+        ...context.floatingStyles,
+        ...style,
+      }}
+      {...context.getFloatingProps(props)}
+      className="tiptap-tooltip"
+    >
+      {children}
+    </div>
+  );
 
-    if (portal) {
-      return <FloatingPortal {...portalProps}>{content}</FloatingPortal>;
-    }
+  if (portal) {
+    return <FloatingPortal {...portalProps}>{content}</FloatingPortal>;
+  }
 
-    return content;
-  },
-);
+  return content;
+});
 
 Tooltip.displayName = 'Tooltip';
 TooltipTrigger.displayName = 'TooltipTrigger';
