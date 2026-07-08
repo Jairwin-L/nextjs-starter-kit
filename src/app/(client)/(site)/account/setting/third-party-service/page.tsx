@@ -35,6 +35,8 @@ import {
   type ThirdPartyServiceOption,
 } from '@/api/modules/third-party-service-credentials';
 import styles from './page.module.scss';
+import { MODAL_OPTION } from '@/constants/antd';
+import { useDebounced } from '@/hooks/use-debounced';
 
 const initialValues: IAppForms.ThirdPartyServiceCredentialFormValues = {
   apiKey: '',
@@ -222,6 +224,13 @@ export default function ThirdPartyServiceCredentialsPage() {
       setDeletingId(null);
     }
   }
+  const debouncedDeleteConfirm = useDebounced(onDeleteConfirm, 300);
+  const debouncedRefresh = useDebounced(() => {
+    loadData().catch(() => undefined);
+  }, 300);
+  const debouncedModalSubmit = useDebounced(() => {
+    form.submit();
+  }, 300);
 
   const selectedServiceOption = getServiceOption(
     serviceOptions,
@@ -252,7 +261,7 @@ export default function ThirdPartyServiceCredentialsPage() {
       render: (serviceName: string) => {
         const option = getServiceOption(serviceOptions, serviceName);
 
-        return <Tag color={option?.color ?? 'default'}>{option?.label ?? serviceName}</Tag>;
+        return <Tag>{option?.label ?? serviceName}</Tag>;
       },
     },
     {
@@ -308,7 +317,7 @@ export default function ThirdPartyServiceCredentialsPage() {
             okType="danger"
             title={`删除“${credential.label}”吗？`}
             onConfirm={async () => {
-              await onDeleteConfirm(credential);
+              await debouncedDeleteConfirm(credential);
             }}
           >
             <Button
@@ -347,12 +356,7 @@ export default function ThirdPartyServiceCredentialsPage() {
         <section className={styles.panel}>
           <div className={styles.filters}>
             <span className={styles.summary}>共 {credentials.length} 个凭据</span>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                loadData().catch(() => undefined);
-              }}
-            >
+            <Button icon={<ReloadOutlined />} onClick={debouncedRefresh}>
               刷新列表
             </Button>
           </div>
@@ -369,15 +373,14 @@ export default function ThirdPartyServiceCredentialsPage() {
         </section>
       </main>
       <Modal
-        centered
+        {...MODAL_OPTION}
         cancelText="取消"
         confirmLoading={saving}
-        destroyOnHidden
         okText={isOverwriteMode ? '覆盖凭据' : '保存凭据'}
         open={modalOpen}
         title={isOverwriteMode ? '覆盖第三方服务 API 凭据' : '新增第三方服务 API 凭据'}
         onCancel={onModalCancel}
-        onOk={() => form.submit()}
+        onOk={debouncedModalSubmit}
       >
         <p className={styles['modal-help']}>
           {isOverwriteMode
@@ -404,9 +407,7 @@ export default function ThirdPartyServiceCredentialsPage() {
           {isOverwriteMode ? (
             <Form.Item label="第三方服务">
               <div className={styles['readonly-value']}>
-                <Tag color={overwriteServiceOption?.color ?? 'default'}>
-                  {overwriteServiceOption?.label ?? overwriteCredential?.serviceName}
-                </Tag>
+                <Tag>{overwriteServiceOption?.label ?? overwriteCredential?.serviceName}</Tag>
               </div>
             </Form.Item>
           ) : (

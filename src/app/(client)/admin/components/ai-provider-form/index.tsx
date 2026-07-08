@@ -10,37 +10,18 @@ import {
   updateAdminAiProviderOption,
   type AiProviderOption,
 } from '@/api/modules/admin';
+import { useDebounced } from '@/hooks/use-debounced';
 import { BYOK_PROVIDER_VALUE_PATTERN } from '@/lib/ai/byok/constants';
 
 const defaultProviderValues: IAppForms.ProviderOptionValues = {
   apiKeyUrl: '',
   chatBaseUrl: '',
-  color: 'processing',
   enabled: true,
   label: '',
   models: [],
   protocol: 'chat-completions',
   value: '',
 };
-
-const providerColorOptions = [
-  'default',
-  'processing',
-  'success',
-  'warning',
-  'error',
-  'blue',
-  'cyan',
-  'geekblue',
-  'gold',
-  'green',
-  'lime',
-  'magenta',
-  'orange',
-  'purple',
-  'red',
-  'volcano',
-].map((color) => ({ label: color, value: color }));
 
 const providerProtocolOptions: Array<{ label: string; value: IByok.AiProviderProtocol }> = [
   { label: 'Chat Completions', value: 'chat-completions' },
@@ -69,7 +50,6 @@ function getProviderPayload(values: IAppForms.ProviderOptionValues): AiProviderO
   return {
     value: values.value.trim(),
     label: values.label.trim(),
-    color: values.color,
     ...(apiKeyUrl ? { apiKeyUrl } : {}),
     protocol: values.protocol,
     chatBaseUrl: values.chatBaseUrl.trim(),
@@ -135,6 +115,7 @@ export function AiProviderForm({
       setSaving(false);
     }
   }
+  const debouncedFinish = useDebounced(onFinish, 300);
 
   return (
     <main className={styles.page}>
@@ -159,7 +140,7 @@ export function AiProviderForm({
           initialValues={defaultProviderValues}
           layout="vertical"
           requiredMark="optional"
-          onFinish={onFinish}
+          onFinish={debouncedFinish}
         >
           <Form.Item
             label="Provider 标识"
@@ -180,13 +161,6 @@ export function AiProviderForm({
             rules={[{ required: true, whitespace: true, message: '请输入展示名称' }]}
           >
             <Input maxLength={40} placeholder="展示名称" />
-          </Form.Item>
-          <Form.Item
-            label="标签颜色"
-            name="color"
-            rules={[{ required: true, message: '请选择标签颜色' }]}
-          >
-            <Select options={providerColorOptions} />
           </Form.Item>
           <Form.Item
             label="API Key 链接"

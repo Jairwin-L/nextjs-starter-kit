@@ -7,7 +7,6 @@ const API_KEY = ['sk', 'test', 'secret'].join('-');
 const PROVIDER_OPTION: IByok.AiProviderOption = {
   value: 'test-provider',
   label: 'Test Provider',
-  color: 'blue',
   apiKeyUrl: 'https://provider.example/keys',
   protocol: 'chat-completions',
   chatBaseUrl: 'https://provider.example/v1/chat/completions',
@@ -68,6 +67,27 @@ describe('BYOK provider', () => {
     });
   });
 
+  it('keeps safe provider error messages for debugging unavailable providers', async () => {
+    mockFetchResponse(
+      Response.json(
+        {
+          error: {
+            message: 'The model `test-model` does not exist or you do not have access to it.',
+            type: 'invalid_request_error',
+          },
+        },
+        { status: 404 },
+      ),
+    );
+
+    await expect(callAiProvider(API_KEY, PROVIDER_OPTION, CHAT_INPUT)).rejects.toMatchObject({
+      code: BYOK_ERROR_CODE.AI_PROVIDER_UNAVAILABLE,
+      message:
+        'AI Provider 请求失败：The model `test-model` does not exist or you do not have access to it.',
+      status: 503,
+    });
+  });
+
   it('maps network failures to provider unavailable', async () => {
     vi.stubGlobal(
       'fetch',
@@ -78,6 +98,7 @@ describe('BYOK provider', () => {
 
     await expect(callAiProvider(API_KEY, PROVIDER_OPTION, CHAT_INPUT)).rejects.toMatchObject({
       code: BYOK_ERROR_CODE.AI_PROVIDER_UNAVAILABLE,
+      message: 'AI Provider 请求失败：网络连接失败或请求超时。',
       status: 503,
     });
   });

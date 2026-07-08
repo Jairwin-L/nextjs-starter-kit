@@ -65,6 +65,11 @@ declare namespace IByok {
     status: CredentialStatus;
   }
 
+  interface DefaultModelConfig {
+    credentialId: string;
+    modelId: string;
+  }
+
   interface RequestMeta {
     requestId?: string;
     ip?: string;
@@ -78,7 +83,9 @@ declare namespace IByok {
     encryptApiKey?: typeof import('@/lib/ai/byok/crypto').encryptApiKey;
     getStoredApiCredential?: typeof import('@/lib/ai/byok/key-store').getStoredApiCredential;
     getStoredAiProviderOptions?: typeof import('@/lib/ai/byok/provider-options-store').getStoredAiProviderOptions;
+    getStoredDefaultModelConfig?: typeof import('@/lib/ai/byok/key-store').getStoredDefaultModelConfig;
     listStoredApiCredentials?: typeof import('@/lib/ai/byok/key-store').listStoredApiCredentials;
+    saveStoredDefaultModelConfig?: typeof import('@/lib/ai/byok/key-store').saveStoredDefaultModelConfig;
     saveStoredApiCredential?: typeof import('@/lib/ai/byok/key-store').saveStoredApiCredential;
     touchStoredApiCredentialLastUsed?: typeof import('@/lib/ai/byok/key-store').touchStoredApiCredentialLastUsed;
     validateProviderApiKey?: typeof import('@/lib/ai/byok/provider').validateProviderApiKey;
@@ -122,7 +129,6 @@ declare namespace IByok {
   interface AiProviderOption {
     apiKeyUrl?: string;
     chatBaseUrl: string;
-    color: string;
     enabled: boolean;
     label: string;
     models: string[];
@@ -183,6 +189,10 @@ declare namespace IByok {
     typeof import('@/lib/ai/byok/schemas').saveOrOverwriteApiCredentialSchema
   >;
 
+  type DefaultModelConfigInput = import('zod').infer<
+    typeof import('@/lib/ai/byok/schemas').defaultModelConfigSchema
+  >;
+
   type ChatRequestInput = import('zod').infer<
     typeof import('@/lib/ai/byok/schemas').chatRequestSchema
   >;
@@ -192,7 +202,6 @@ declare namespace IByok {
   interface ProviderOptionRow {
     api_key_url: string | null;
     chat_base_url: string;
-    color: string;
     enabled: boolean;
     label: string;
     models: string[];
