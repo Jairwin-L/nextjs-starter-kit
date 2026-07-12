@@ -57,10 +57,12 @@ import { useMobile } from '@/hooks/use-mobile';
 import { useWindowSize } from '@/hooks/use-window-size';
 
 // --- Lib ---
+import { TIPTAP_IMAGE_HTML_ATTRIBUTES } from '@/constants/tiptap';
 import { handleImageUpload, MAX_FILE_SIZE } from '@/lib/tiptap-utils';
 
 // --- Styles ---
 import '@/components/tiptap-templates/simple/simple-editor.scss';
+import LoadingEditorPreview from '../loading/editor';
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -225,7 +227,9 @@ export const SimpleEditor = React.forwardRef(
         TaskList,
         TaskItem.configure({ nested: true }),
         Highlight.configure({ multicolor: true }),
-        Image,
+        Image.configure({
+          HTMLAttributes: TIPTAP_IMAGE_HTML_ATTRIBUTES,
+        }),
         Typography,
         Superscript,
         Subscript,
@@ -339,11 +343,7 @@ export const SimpleEditor = React.forwardRef(
 
     // 如果编辑器还未初始化，显示加载状态
     if (!editor) {
-      return (
-        <div className="simple-editor-loading">
-          <div>Loading editor...</div>
-        </div>
-      );
+      return <LoadingEditorPreview />;
     }
 
     return (

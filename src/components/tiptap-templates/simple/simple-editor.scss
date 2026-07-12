@@ -40,10 +40,252 @@
     .ProseMirror-trailingBreak {
       display: none;
     }
-    .tiptap.ProseMirror img {
-      max-width: min(700px, 100%);
-      width: auto;
-      height: auto;
+
+    .tiptap.ProseMirror {
+      max-width: 920px;
+      height: auto !important;
+      min-height: 100%;
+      margin: 0 auto;
+      color: $site-color-text;
+      font-family:
+        thicccboi,
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        sans-serif;
+      font-size: 1rem;
+      line-height: 1.72;
+
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        margin: 1.65em 0 0.65em;
+        color: $site-color-ink;
+        font-weight: 700;
+        letter-spacing: 0;
+        line-height: 1.32;
+
+        &:first-child {
+          margin-top: 0;
+        }
+      }
+
+      h1 {
+        font-size: 2rem;
+        line-height: 1.25;
+      }
+
+      h2 {
+        font-size: 1.625rem;
+      }
+
+      h3 {
+        font-size: 1.375rem;
+      }
+
+      h4 {
+        font-size: 1.125rem;
+      }
+
+      h5 {
+        font-size: 1rem;
+      }
+
+      h6 {
+        color: $site-color-muted;
+        font-size: 0.9375rem;
+      }
+
+      p {
+        margin: 0.85em 0;
+
+        &:first-child {
+          margin-top: 0;
+        }
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+
+      ul,
+      ol {
+        margin: 0.75em 0 1.1em;
+        padding-left: 1.7em;
+      }
+
+      ul {
+        list-style: disc;
+
+        ul {
+          list-style: circle;
+
+          ul {
+            list-style: square;
+          }
+        }
+      }
+
+      ol {
+        list-style: decimal;
+
+        ol {
+          list-style: lower-alpha;
+
+          ol {
+            list-style: lower-roman;
+          }
+        }
+      }
+
+      li {
+        margin: 0.34em 0;
+        list-style: inherit;
+
+        p {
+          margin: 0;
+        }
+      }
+
+      ul[data-type='taskList'] {
+        list-style: none;
+        padding-left: 0.25em;
+
+        li {
+          list-style: none;
+        }
+      }
+
+      blockquote {
+        border-left: 3px solid $site-color-border-strong;
+        margin: 1.25em 0;
+        padding: 0.35em 0 0.35em 0.75em;
+        color: $site-color-muted;
+
+        &::before {
+          display: none;
+        }
+      }
+
+      pre {
+        overflow: hidden;
+      }
+
+      hr {
+        height: 1px;
+        border: 0;
+        margin: 1.65em 0;
+        background: $site-color-border;
+      }
+
+      img {
+        display: block;
+        max-width: min(700px, 100%);
+        width: auto;
+        height: auto;
+        // margin: 1em 0;
+      }
+
+      a {
+        color: $site-color-blue;
+        text-decoration: underline;
+        text-underline-offset: 0.15em;
+      }
+
+      code:not(pre code) {
+        border: 1px solid $site-color-border;
+        border-radius: $site-radius-xs;
+        background: $site-color-surface-subtle;
+        color: $site-color-muted;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 0.875em;
+        padding: 0.08em 0.32em;
+      }
+
+      strong {
+        font-weight: 700;
+      }
+
+      u {
+        text-underline-offset: 0.18em;
+      }
+    }
+  }
+}
+
+.dark {
+  .simple-editor-viewer-container {
+    .simple-editor-viewer-content {
+      .tiptap.ProseMirror {
+        color: rgb(229 231 235 / 88%);
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5 {
+          color: #f8fafc;
+        }
+
+        h6,
+        blockquote {
+          color: rgb(229 231 235 / 64%);
+        }
+
+        blockquote {
+          border-left-color: rgb(255 255 255 / 22%);
+        }
+
+        hr {
+          background: rgb(255 255 255 / 14%);
+        }
+
+        code:not(pre code) {
+          border-color: rgb(255 255 255 / 14%);
+          background: rgb(255 255 255 / 8%);
+          color: rgb(229 231 235 / 78%);
+        }
+      }
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .simple-editor-viewer-container {
+    .simple-editor-viewer-content {
+      .tiptap.ProseMirror {
+        color: rgb(229 231 235 / 88%);
+
+        h1,
+        h2,
+        h3,
+        h4,
+        h5 {
+          color: #f8fafc;
+        }
+
+        h6,
+        blockquote {
+          color: rgb(229 231 235 / 64%);
+        }
+
+        blockquote {
+          border-left-color: rgb(255 255 255 / 22%);
+        }
+
+        hr {
+          background: rgb(255 255 255 / 14%);
+        }
+
+        code:not(pre code) {
+          border-color: rgb(255 255 255 / 14%);
+          background: rgb(255 255 255 / 8%);
+          color: rgb(229 231 235 / 78%);
+        }
+      }
     }
   }
 }

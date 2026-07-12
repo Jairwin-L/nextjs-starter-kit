@@ -19,6 +19,7 @@ import { StarterKit } from '@tiptap/starter-kit';
 import { Input, Modal, message } from 'antd';
 
 // --- Custom Extensions ---
+import { ColoredText } from '@/components/tiptap-extension/colored-text-extension';
 import { Link } from '@/components/tiptap-extension/link-extension';
 import { Selection } from '@/components/tiptap-extension/selection-extension';
 import { TrailingNode } from '@/components/tiptap-extension/trailing-node-extension';
@@ -58,10 +59,12 @@ import { useMobile } from '@/hooks/use-mobile';
 import { useWindowSize } from '@/hooks/use-window-size';
 
 // --- Lib ---
+import { TIPTAP_IMAGE_HTML_ATTRIBUTES } from '@/constants/tiptap';
 import { handleImageUpload, MAX_FILE_SIZE } from '@/lib/tiptap-utils';
 
 // --- Styles ---
 import '@/components/tiptap-templates/simple/simple-editor.scss';
+import LoadingEditorPreview from '../loading/editor';
 
 const MainToolbarContent = ({
   onHighlighterClick,
@@ -201,10 +204,13 @@ export const MarkdownEditor = React.forwardRef(
         StarterKit,
         TextAlign.configure({ types: ['heading', 'paragraph'] }),
         Underline,
+        ColoredText,
         TaskList,
         TaskItem.configure({ nested: true }),
         Highlight.configure({ multicolor: true }),
-        Image,
+        Image.configure({
+          HTMLAttributes: TIPTAP_IMAGE_HTML_ATTRIBUTES,
+        }),
         Typography,
         Superscript,
         Subscript,
@@ -314,11 +320,7 @@ export const MarkdownEditor = React.forwardRef(
     };
 
     if (!editor) {
-      return (
-        <div className="simple-editor-loading">
-          <div>Loading editor...</div>
-        </div>
-      );
+      return <LoadingEditorPreview />;
     }
 
     return (
